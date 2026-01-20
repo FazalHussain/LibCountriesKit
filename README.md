@@ -22,19 +22,51 @@ Flag Kit repo: https://github.com/madebybowtie/FlagKit
     LibCK.getCompatFlagDrawable(Context context, String countryCode)
     
 # Usage:
-##### Add jetback repository to your gradle file:
 
-    allprojects {
-		repositories {
-			...
-			maven { url 'https://jitpack.io' }
-		}
-	}
+## Requirements
+- AndroidX (this library uses AndroidX)
+- Minimum SDK: 21 (Android 5.0 Lollipop)
 
-##### Add the dependency to your project:
-    	dependencies {
-	        compile 'com.github.ahmadRMusa:LibCountriesKit:dev-SNAPSHOT'
+## Installation
 
-	}
+### Step 1: Add JitPack repository
+
+**For projects using settings.gradle (recommended for newer projects):**
+
+In your `settings.gradle` file:
+```gradle
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+**For projects using build.gradle (legacy):**
+
+In your root `build.gradle` file:
+```gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+```
+
+### Step 2: Add the dependency
+
+In your `app/build.gradle` file:
+```gradle
+dependencies {
+    implementation 'com.github.FazalHussain:LibCountriesKit:1.0'
+}
+```
+
+**Note:** Replace `1.0` with the latest release tag or use `-SNAPSHOT` for the latest commit from the main branch.
 
 
