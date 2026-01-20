@@ -43,29 +43,66 @@ dependencies {
 }
 
 // Task to extract JAR from AAR for JitPack compatibility
-task createJar(type: Copy) {
+task createJar {
     dependsOn 'assembleRelease'
     
-    def aarFile = file("$buildDir/outputs/aar/${project.getName()}-release.aar")
-    def outputDir = file("$buildDir/libs")
-    
-    from(zipTree(aarFile)) {
-        include "classes.jar"
-    }
-    into(outputDir)
-    
-    // Rename with version at execution time
-    rename { filename ->
-        def version = android.defaultConfig.versionName
-        return "LibCountriesKit-${version}.jar"
-    }
+    // Capture values at configuration time to avoid configuration cache issues
+    def buildDirectory = layout.buildDirectory
+    def projectName = project.name
+    def versionName = android.defaultConfig.versionName
     
     doLast {
-        def version = android.defaultConfig.versionName
-        def jarFileName = "LibCountriesKit-${version}.jar"
-        def jarFile = file("$buildDir/libs/${jarFileName}")
-        if (jarFile.exists()) {
-            println "✓ JAR created: ${jarFile.absolutePath}"
+        def buildDir = buildDirectory.get().asFile
+        def outputDir = new File(buildDir, "libs")
+        outputDir.mkdirs()
+        
+        // Try different possible AAR file paths
+        def aarDir = new File(buildDir, "outputs/aar")
+        def possiblePaths = [
+            new File(aarDir, "${projectName}-release.aar"),
+            new File(aarDir, "app-release.aar")
+        ]
+        
+        // If none of the expected paths exist, search for any .aar file
+        def aarFile = possiblePaths.find { it.exists() }
+        if (aarFile == null && aarDir.exists()) {
+            def aarFiles = aarDir.listFiles(new FilenameFilter() {
+                boolean accept(File dir, String name) {
+                    return name.endsWith(".aar") && name.contains("release")
+                }
+            })
+            if (aarFiles != null && aarFiles.length > 0) {
+                aarFile = aarFiles[0]
+            }
+        }
+        
+        if (aarFile == null || !aarFile.exists()) {
+            throw new GradleException("AAR file not found. Tried: ${possiblePaths.collect { it.absolutePath }.join(', ')}. Searched in: ${aarDir.absolutePath}")
+        }
+        
+        println "Using AAR file: ${aarFile.absolutePath}"
+        
+        def jarFileName = "LibCountriesKit-${versionName}.jar"
+        def jarFile = new File(outputDir, jarFileName)
+        
+        // Extract classes.jar from AAR
+        java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(aarFile)
+        try {
+            java.util.zip.ZipEntry classesJar = zipFile.getEntry("classes.jar")
+            if (classesJar == null) {
+                throw new GradleException("classes.jar not found in AAR: ${aarFile.absolutePath}")
+            }
+            
+            // Copy classes.jar to output
+            jarFile.withOutputStream { out ->
+                zipFile.getInputStream(classesJar).withStream { input ->
+                    out << input
+                }
+            }
+            
+            println "✓ JAR created: ${jarFile.absolutePath} (${jarFile.length()} bytes)"
+        } finally {
+            zipFile.close()
         }
     }
 }
