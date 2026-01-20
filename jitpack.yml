@@ -3,4 +3,6 @@ jdk:
 before_install:
   - ./gradlew clean
 install:
+  - ./gradlew assembleRelease
+  - ./gradlew createJar
   - ./gradlew publishToMavenLocal

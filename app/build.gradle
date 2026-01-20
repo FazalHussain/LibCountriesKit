@@ -42,7 +42,30 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
+// Task to extract JAR from AAR for JitPack compatibility
+task createJar(type: Copy) {
+    dependsOn 'assembleRelease'
+    
+    def aarFile = file("$buildDir/outputs/aar/${project.getName()}-release.aar")
+    def outputDir = file("$buildDir/libs")
+    
+    from(zipTree(aarFile)) {
+        include "classes.jar"
+    }
+    into(outputDir)
+    rename("classes.jar", "LibCountriesKit.jar")
+    
+    doLast {
+        def jarFile = file("$buildDir/libs/LibCountriesKit.jar")
+        if (jarFile.exists()) {
+            println "✓ JAR created: ${jarFile.absolutePath}"
+        }
+    }
+}
+
 afterEvaluate {
+    createJar.archiveVersion = android.defaultConfig.versionName
+    
     publishing {
         publications {
             release(MavenPublication) {
