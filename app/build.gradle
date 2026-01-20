@@ -53,10 +53,17 @@ task createJar(type: Copy) {
         include "classes.jar"
     }
     into(outputDir)
-    rename("classes.jar", "LibCountriesKit.jar")
+    
+    // Rename with version at execution time
+    rename { filename ->
+        def version = android.defaultConfig.versionName
+        return "LibCountriesKit-${version}.jar"
+    }
     
     doLast {
-        def jarFile = file("$buildDir/libs/LibCountriesKit.jar")
+        def version = android.defaultConfig.versionName
+        def jarFileName = "LibCountriesKit-${version}.jar"
+        def jarFile = file("$buildDir/libs/${jarFileName}")
         if (jarFile.exists()) {
             println "✓ JAR created: ${jarFile.absolutePath}"
         }
@@ -64,6 +71,15 @@ task createJar(type: Copy) {
 }
 
 afterEvaluate {
+    def version = android.defaultConfig.versionName
+    def jarFileName = "LibCountriesKit-${version}.jar"
+    def jarFile = file("$buildDir/libs/${jarFileName}")
+    
+    // Ensure JAR is created before publishing
+    tasks.named('publishToMavenLocal').configure {
+        dependsOn 'createJar'
+    }
+    
     publishing {
         publications {
             release(MavenPublication) {
@@ -71,7 +87,14 @@ afterEvaluate {
                 
                 groupId = 'com.github.FazalHussain'
                 artifactId = 'LibCountriesKit'
-                version = android.defaultConfig.versionName
+                version = version
+                
+                // Add JAR artifact to publication
+                artifact(jarFile) {
+                    classifier = null
+                    extension = 'jar'
+                    builtBy createJar
+                }
             }
         }
     }
