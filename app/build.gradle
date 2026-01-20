@@ -64,8 +64,6 @@ task createJar(type: Copy) {
 }
 
 afterEvaluate {
-    createJar.archiveVersion = android.defaultConfig.versionName
-    
     publishing {
         publications {
             release(MavenPublication) {
